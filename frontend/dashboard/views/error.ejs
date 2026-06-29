@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Error</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="/">Watchlist</a>
+    <a href="/listings">All Listings</a>
+    <a href="/depreciation">Depreciation</a>
+    <a href="/alternatives">Alternatives</a>
+  </nav>
+  <main>
+    <h1>Error</h1>
+    <p class="error"><%= message %></p>
+    <p>Is the Python API running? <code>cd backend && uvicorn api.main:app --reload</code></p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Car Shopping — Listings</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="/">Watchlist</a>
+    <a href="/listings">All Listings</a>
+    <a href="/depreciation">Depreciation</a>
+    <a href="/alternatives">Alternatives</a>
+  </nav>
+  <main>
+    <h1>Listings</h1>
+    <form method="get" action="/listings" class="filter-form">
+      <input name="make" placeholder="Make" value="<%= query.make ?? '' %>">
+      <input name="model" placeholder="Model" value="<%= query.model ?? '' %>">
+      <input name="year_min" placeholder="Year min" type="number" value="<%= query.year_min ?? '' %>">
+      <input name="year_max" placeholder="Year max" type="number" value="<%= query.year_max ?? '' %>">
+      <input name="max_price" placeholder="Max price" type="number" value="<%= query.max_price ?? '' %>">
+      <input type="hidden" name="sort_by" value="<%= query.sort_by ?? 'price' %>">
+      <input type="hidden" name="sort_dir" value="<%= query.sort_dir ?? 'asc' %>">
+      <button type="submit">Filter</button>
+    </form>
+
+    <% if (listings.length === 0) { %>
+      <p class="muted">No listings match your filters.</p>
+    <% } else { %>
+      <p class="muted"><%= listings.length %> listing(s)</p>
+      <%
+        const sortBy = query.sort_by ?? 'price';
+        const sortDir = query.sort_dir ?? 'asc';
+        function sortLink(col) {
+          const dir = (sortBy === col && sortDir === 'asc') ? 'desc' : 'asc';
+          const p = new URLSearchParams({...query, sort_by: col, sort_dir: dir});
+          return '/listings?' + p.toString();
+        }
+        function sortLabel(col, label) {
+          if (sortBy !== col) return label;
+          return label + (sortDir === 'asc' ? ' ▲' : ' ▼');
+        }
+      %>
+      <table>
+        <thead>
+          <tr>
+            <th><a href="<%= sortLink('year') %>"><%= sortLabel('year','Year') %></a></th>
+            <th>Make</th>
+            <th>Model</th>
+            <th><a href="<%= sortLink('price') %>"><%= sortLabel('price','Price') %></a></th>
+            <th><a href="<%= sortLink('mileage') %>"><%= sortLabel('mileage','Mileage') %></a></th>
+            <th><a href="<%= sortLink('distance') %>"><%= sortLabel('distance','Distance') %></a></th>
+            <th>Location</th>
+            <th>Source</th>
+            <th><a href="<%= sortLink('scraped_at') %>"><%= sortLabel('scraped_at','Scraped') %></a></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% listings.forEach(l => { %>
+            <tr>
+              <td><%= l.year %></td>
+              <td><%= l.make %></td>
+              <td><%= l.model %></td>
+              <td>$<%= l.price?.toLocaleString() ?? '—' %></td>
+              <td><%= l.mileage?.toLocaleString() ?? '—' %> mi</td>
+              <td><%= l.distance_miles != null ? l.distance_miles + ' mi' : '—' %></td>
+              <td><%= l.location ?? '—' %></td>
+              <td><a href="<%= l.source_url %>" target="_blank"><%= l.source %></a></td>
+              <td><%= l.scraped_at ? new Date(l.scraped_at).toLocaleDateString() : '—' %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </main>
+</body>
+</html>

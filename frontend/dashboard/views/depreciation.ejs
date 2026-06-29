@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Car Shopping — Depreciation</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="/">Watchlist</a>
+    <a href="/listings">All Listings</a>
+    <a href="/depreciation">Depreciation</a>
+    <a href="/alternatives">Alternatives</a>
+  </nav>
+  <main>
+    <h1>Depreciation Estimates</h1>
+    <p class="muted">$/yr rates computed from median listing prices across model years.</p>
+    <% if (data.length === 0) { %>
+      <p class="muted">No estimates yet — run a scrape pass first.</p>
+    <% } else { %>
+      <table>
+        <thead>
+          <tr><th>Make</th><th>Model</th><th>Base Year</th><th>Rate (5yr) $/yr</th><th>Rate (10yr) $/yr</th></tr>
+        </thead>
+        <tbody>
+          <% data.forEach(d => { %>
+            <tr>
+              <td><%= d.make %></td>
+              <td><%= d.model %></td>
+              <td><%= d.base_year %></td>
+              <td><%= d.rate_5yr ? '$' + Math.round(d.rate_5yr).toLocaleString() : '—' %></td>
+              <td><%= d.rate_10yr ? '$' + Math.round(d.rate_10yr).toLocaleString() : '—' %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </main>
+</body>
+</html>

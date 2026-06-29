@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Car Shopping — Alternatives</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="/">Watchlist</a>
+    <a href="/listings">All Listings</a>
+    <a href="/depreciation">Depreciation</a>
+    <a href="/alternatives">Alternatives</a>
+  </nav>
+  <main>
+    <h1>Alternatives</h1>
+    <p class="muted">Similar vehicles in the same segment, based on your config.toml segment map.</p>
+    <% if (data.length === 0) { %>
+      <p class="muted">No alternatives found — check your segments config and run a scrape.</p>
+    <% } else { %>
+      <table>
+        <thead>
+          <tr><th>For</th><th>Alternative</th><th>Year</th><th>Price</th><th>Mileage</th><th>Link</th></tr>
+        </thead>
+        <tbody>
+          <% data.forEach(d => { %>
+            <tr>
+              <td><%= d.for_vehicle %></td>
+              <td><%= d.alternative %></td>
+              <td><%= d.year %></td>
+              <td>$<%= d.price?.toLocaleString() ?? '—' %></td>
+              <td><%= d.mileage?.toLocaleString() ?? '—' %> mi</td>
+              <td><a href="<%= d.source_url %>" target="_blank">view</a></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </main>
+</body>
+</html>

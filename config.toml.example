@@ -1,0 +1,47 @@
+# Car Shopping Tool Configuration
+# Secrets (DATABASE_URL, TWILIO_*) go in .env — never in this file.
+
+[scraper]
+interval_minutes = 60          # How often to scrape listings
+sources = ["cargurus", "carscom", "edmunds"]
+zip = "00000"                  # Your ZIP code for search radius
+radius_miles = 100
+
+[alerts]
+price_drop_threshold_pct = 5   # Alert if price drops by this % or more
+sms_recipients = ["+15550000000"]
+
+[[vehicles]]
+make = "Cadillac"
+model = "XTS"
+year_min = 2018
+year_max = 2030
+min_price = 14000
+max_price = 21000
+max_mileage = 150000
+
+[[vehicles]]
+make = "Cadillac"
+model = "CT6"
+trim_notes = "3.6L engine"     # filter hint for scraper/display; not all sources support trim filtering
+year_min = 2016
+year_max = 2030
+min_price = 14000
+max_price = 21000
+max_mileage = 150000
+
+[[vehicles]]
+make = "Chevrolet"
+model = "Volt"
+year_min = 2018
+year_max = 2018
+min_price = 14000
+max_price = 21000
+max_mileage = 150000
+
+[segments]
+# Map makes/models to segments for alternative generation
+# Key: "Make Model", Value: list of "Make Model" alternatives in the same segment
+"Cadillac XTS" = ["Cadillac CT6", "Lincoln Continental", "Buick LaCrosse", "Chrysler 300"]
+"Cadillac CT6" = ["Cadillac XTS", "Lincoln Continental", "Genesis G80"]
+"Chevrolet Volt" = ["Toyota Prius Prime", "Ford Fusion Energi", "Hyundai Ioniq Plug-in"]

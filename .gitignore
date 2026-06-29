@@ -1,0 +1,35 @@
+# Secrets
+.env
+
+# Personal config (config.toml.example is committed; config.toml is gitignored)
+config.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Node
+node_modules/
+frontend/dashboard/node_modules/
+
+# Scraper debug output and caches
+debug_last_page.html
+debug_browse.html
+debug_edmunds.html
+backend/scraper/cargurus_ids.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Car Shopping — Watchlist</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="/">Watchlist</a>
+    <a href="/listings">All Listings</a>
+    <a href="/depreciation">Depreciation</a>
+    <a href="/alternatives">Alternatives</a>
+  </nav>
+  <main>
+    <h1>Watchlist</h1>
+    <% watchlist.forEach(entry => { %>
+      <section class="vehicle-block">
+        <h2><%= entry.vehicle.make %> <%= entry.vehicle.model %>
+          (<%= entry.vehicle.year_min %>–<%= entry.vehicle.year_max %>)
+          &mdash; max $<%= entry.vehicle.max_price?.toLocaleString() %>
+        </h2>
+        <% if (entry.best_listings.length === 0) { %>
+          <p class="muted">No listings found yet.</p>
+        <% } else { %>
+          <table>
+            <thead><tr><th>Year</th><th>Price</th><th>Mileage</th><th>Location</th><th>Source</th></tr></thead>
+            <tbody>
+              <% entry.best_listings.forEach(l => { %>
+                <tr>
+                  <td><%= l.year %></td>
+                  <td>$<%= l.price?.toLocaleString() ?? '—' %></td>
+                  <td><%= l.mileage?.toLocaleString() ?? '—' %> mi</td>
+                  <td><%= l.location ?? '—' %></td>
+                  <td><a href="<%= l.source_url %>" target="_blank"><%= l.source %></a></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <% } %>
+      </section>
+    <% }); %>
+  </main>
+</body>
+</html>
