@@ -1,11 +1,12 @@
 """FastAPI application — serves listing data to the Node.js dashboard."""
 
 from fastapi import FastAPI, Query
-from sqlalchemy import select, asc, desc, nulls_last
+from sqlalchemy import select, asc, desc, nulls_last, or_
 from backend.models import Listing, DepreciationEstimate
 import backend.db as db
 import backend.config as config
 from backend.processor.alternatives import get_alternatives
+from backend.processor.fuel_economy import get_mpg
 
 app = FastAPI(title="Car Shopping API")
 
@@ -110,6 +111,51 @@ def watchlist():
             rows = session.execute(q).scalars().all()
             results.append({"vehicle": v, "best_listings": [_listing_dict(r) for r in rows]})
         return results
+    finally:
+        session.close()
+
+
+@app.get("/api/cost_of_ownership")
+def cost_of_ownership():
+    coo = _cfg.get("cost_of_ownership", {})
+    monthly_miles = coo.get("monthly_miles", 1000)
+    gas_price = coo.get("gas_price_per_gallon", 3.50)
+
+    session = db.get_session()
+    try:
+        rows = []
+        for v in _cfg.get("vehicles", []):
+            make, model = v["make"], v["model"]
+            est = session.execute(
+                select(DepreciationEstimate)
+                .where(DepreciationEstimate.make == make, DepreciationEstimate.model == model)
+                .where(or_(
+                    DepreciationEstimate.rate_5yr.is_not(None),
+                    DepreciationEstimate.rate_10yr.is_not(None),
+                ))
+                .order_by(DepreciationEstimate.base_year.desc())
+                .limit(1)
+            ).scalar_one_or_none()
+
+            rate = float(est.rate_5yr or est.rate_10yr) if est else None
+            depr_per_month = round(rate / 12, 2) if rate else None
+
+            mpg = get_mpg(make, model, v.get("year_min", 2018))
+            fuel_per_month = round(monthly_miles / mpg * gas_price, 2) if mpg else None
+
+            components = [x for x in [depr_per_month, fuel_per_month] if x is not None]
+            total = round(sum(components), 2) if components else None
+
+            rows.append({
+                "make": make, "model": model,
+                "depreciation_per_month": depr_per_month,
+                "fuel_per_month": fuel_per_month,
+                "total_per_month": total,
+                "mpg_used": mpg,
+                "monthly_miles": monthly_miles,
+                "gas_price": gas_price,
+            })
+        return rows
     finally:
         session.close()
 

@@ -2,6 +2,7 @@
 
 ## Process Rules
 - After each significant step: update FEATURES.md, update this file, update README.md if user-facing, verify requirements.
+- After each step: check whether `restart.sh` needs updating — new services/ports to stop/start, new caches to clear on `--purge`, new one-shot tasks to run on `--scrape`. Update the script if so.
 - Ask before filling in unspecified values (price floors, mileage limits, etc.).
 - Never commit secrets. config.toml is gitignored; config.toml.example is the committed template.
 
@@ -71,6 +72,21 @@
 - API default limit raised from 50 to 200 so dashboard shows all listings without pagination
 - 38 `alerts_sent` suppression records pre-inserted for all currently-alertable XTS listings to prevent alert flood on first daemon run
 - `debug_browse.html` added to `.gitignore`
+
+---
+
+### restart.sh
+- `restart.sh` — NEW: single entry point to stop/start all services; kills by port (lsof) rather than by name; `--purge` truncates DB + clears caches (with confirmation); `--scrape` runs a one-shot scrape + depreciation pass in the foreground after services are up; both flags combinable for full reset
+
+---
+
+### Cost of Ownership Feature
+- `config.toml` / `config.toml.example` — added `[cost_of_ownership]` section: `monthly_miles`, `gas_price_per_gallon`
+- `backend/processor/fuel_economy.py` — NEW: fetches combined MPG/MPGe from EPA fueleconomy.gov REST API; PHEVs use `phevComb`, others use `comb08`; results cached in `backend/processor/mpg_cache.json` (gitignored)
+- `backend/api/main.py` — added `/api/cost_of_ownership` endpoint: queries `depreciation_estimates` for best rate, calls `get_mpg()`, returns depreciation + fuel $/month + total per configured vehicle
+- `frontend/dashboard/server.js` — added `/cost` route
+- `frontend/dashboard/views/cost_of_ownership.ejs` — NEW: table of vehicles × cost components
+- All existing views — added "Cost of Ownership" nav link
 
 ---
 

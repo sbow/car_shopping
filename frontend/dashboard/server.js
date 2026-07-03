@@ -59,6 +59,15 @@ app.get('/alternatives', async (req, res) => {
   }
 });
 
+app.get('/cost', async (req, res) => {
+  try {
+    const data = await api('/api/cost_of_ownership');
+    res.render('cost_of_ownership', { data });
+  } catch (e) {
+    res.render('error', { message: e.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Dashboard running at http://localhost:${PORT}`);
 });
