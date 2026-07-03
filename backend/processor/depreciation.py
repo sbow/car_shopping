@@ -21,7 +21,13 @@ def compute_all(cfg: dict) -> None:
     try:
         for v in cfg.get("vehicles", []):
             make, model = v["make"], v["model"]
-            base_year = v.get("year_max") or v.get("year_min")
+            # Use the most recent year with actual listings rather than year_max from
+            # config, which is often a future year with no data.
+            base_year = session.execute(
+                select(func.max(Listing.year))
+                .where(Listing.make == make, Listing.model == model)
+                .where(Listing.price.isnot(None))
+            ).scalar()
             if not base_year:
                 continue
             estimate = _compute(session, make, model, base_year)
