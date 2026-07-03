@@ -2,6 +2,7 @@
 
 ## Process Rules
 - After each significant step: update FEATURES.md, update this file, update README.md if user-facing, verify requirements.
+- After each step: check whether `restart.sh` needs updating — new services/ports to stop/start, new caches to clear on `--purge`, new one-shot tasks to run on `--scrape`. Update the script if so.
 - Ask before filling in unspecified values (price floors, mileage limits, etc.).
 - Never commit secrets. config.toml is gitignored; config.toml.example is the committed template.
 
