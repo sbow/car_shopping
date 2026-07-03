@@ -23,6 +23,8 @@
 - [x] Multi-source runner — dispatches to cargurus/carscom/edmunds by config.toml sources list
 - [x] End-to-end smoke test — scrape → DB → dashboard → SMS (Twilio SID confirmed, 59 listings in dashboard)
 
+- [x] Estimated Cost of Ownership — $/month panel combining depreciation + fuel (EPA MPG/MPGe via fueleconomy.gov API)
+
 ## Backlog / Future
 
 - [ ] CT6 trim filtering — filter by "3.6L" engine trim at scraper or post-processing level

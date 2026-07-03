@@ -24,6 +24,7 @@ debug_last_page.html
 debug_browse.html
 debug_edmunds.html
 backend/scraper/cargurus_ids.json
+backend/processor/mpg_cache.json
 
 # OS
 .DS_Store

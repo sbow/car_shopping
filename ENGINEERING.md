@@ -74,6 +74,16 @@
 
 ---
 
+### Cost of Ownership Feature
+- `config.toml` / `config.toml.example` — added `[cost_of_ownership]` section: `monthly_miles`, `gas_price_per_gallon`
+- `backend/processor/fuel_economy.py` — NEW: fetches combined MPG/MPGe from EPA fueleconomy.gov REST API; PHEVs use `phevComb`, others use `comb08`; results cached in `backend/processor/mpg_cache.json` (gitignored)
+- `backend/api/main.py` — added `/api/cost_of_ownership` endpoint: queries `depreciation_estimates` for best rate, calls `get_mpg()`, returns depreciation + fuel $/month + total per configured vehicle
+- `frontend/dashboard/server.js` — added `/cost` route
+- `frontend/dashboard/views/cost_of_ownership.ejs` — NEW: table of vehicles × cost components
+- All existing views — added "Cost of Ownership" nav link
+
+---
+
 ## Current Status
 
 **MVP complete. All features shipped and smoke-tested.**
