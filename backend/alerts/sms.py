@@ -13,8 +13,12 @@ _COOLDOWN_HOURS = 24  # Don't re-alert on the same listing within this window
 
 
 def run(cfg: dict) -> None:
-    threshold_pct = cfg.get("alerts", {}).get("price_drop_threshold_pct", 5)
-    recipients = cfg.get("alerts", {}).get("sms_recipients", [])
+    alerts_cfg = cfg.get("alerts", {})
+    if not alerts_cfg.get("enabled", True):
+        logger.info("Alerts disabled in config — skipping SMS dispatch")
+        return
+
+    recipients = alerts_cfg.get("sms_recipients", [])
     twilio_cfg = cfg["twilio"]
 
     client = Client(twilio_cfg["account_sid"], twilio_cfg["auth_token"])
@@ -33,9 +37,10 @@ def run(cfg: dict) -> None:
 
 
 def _check_new_underpriced(session, client, twilio_cfg, recipients, v: dict) -> None:
-    """Alert on listings that are below the configured max_price."""
+    """Alert on listings that are 10% below max_price and above min_price."""
     make, model = v["make"], v["model"]
     max_price = v.get("max_price")
+    min_price = v.get("min_price")
     if not max_price:
         return
 
@@ -43,9 +48,11 @@ def _check_new_underpriced(session, client, twilio_cfg, recipients, v: dict) -> 
     q = (
         select(Listing)
         .where(Listing.make == make, Listing.model == model)
-        .where(Listing.price <= max_price * 0.9)  # 10% below threshold = deal
+        .where(Listing.price <= max_price * 0.9)  # 10% below ceiling = deal
         .where(Listing.scraped_at >= cutoff)
     )
+    if min_price:
+        q = q.where(Listing.price >= min_price)
     listings = session.execute(q).scalars().all()
 
     for listing in listings:
@@ -56,9 +63,12 @@ def _check_new_underpriced(session, client, twilio_cfg, recipients, v: dict) -> 
             f"at ${listing.price:,} ({listing.mileage:,} mi) — {listing.source_url}"
         )
         for recipient in recipients:
-            _send_sms(client, twilio_cfg["from_number"], recipient, msg)
-            _record_alert(session, listing.id, "underpriced", recipient)
-            logger.info("Alert sent to %s: %s", recipient, msg)
+            try:
+                _send_sms(client, twilio_cfg["from_number"], recipient, msg)
+                _record_alert(session, listing.id, "underpriced", recipient)
+                logger.info("Alert sent to %s: %s", recipient, msg)
+            except Exception:
+                logger.exception("Failed to send SMS to %s for listing %s", recipient, listing.id)
 
 
 def _already_alerted(session, listing_id: int, alert_type: str) -> bool:

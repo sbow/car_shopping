@@ -8,7 +8,7 @@ A personal vehicle deal-finder. Tracks listings from multiple sources, estimates
 - **Depreciation estimator** — infers $/yr depreciation by comparing prices across model years
 - **Alternative generator** — suggests comparable vehicles in the same segment
 - **Dashboard** — Node.js/Express web UI with sortable listings (price, mileage, year, distance)
-- **SMS alerts** — Twilio-powered notifications for underpriced listings
+- **SMS alerts** — Twilio-powered notifications for underpriced listings; toggle via `alerts.enabled` in `config.toml`
 
 ## Quick Start
 ```bash
