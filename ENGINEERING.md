@@ -74,6 +74,11 @@
 
 ---
 
+### restart.sh
+- `restart.sh` — NEW: single entry point to stop/start all services; kills by port (lsof) rather than by name; `--purge` truncates DB + clears caches (with confirmation); `--scrape` runs a one-shot scrape + depreciation pass in the foreground after services are up; both flags combinable for full reset
+
+---
+
 ### Cost of Ownership Feature
 - `config.toml` / `config.toml.example` — added `[cost_of_ownership]` section: `monthly_miles`, `gas_price_per_gallon`
 - `backend/processor/fuel_economy.py` — NEW: fetches combined MPG/MPGe from EPA fueleconomy.gov REST API; PHEVs use `phevComb`, others use `comb08`; results cached in `backend/processor/mpg_cache.json` (gitignored)
