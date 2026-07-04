@@ -50,30 +50,42 @@ def compute_all(cfg: dict) -> None:
         session.close()
 
 
-def _estimate_r(v0: float, vt: float, t: int) -> float | None:
+def _r_with_reason(v0: float, vt: float, t: int) -> tuple[float | None, str | None]:
     """Estimate annual decay rate r from V(t) = V0*(1-r)^t.
 
-    Returns None if inputs are invalid or the result falls outside a
-    plausible range for used-car depreciation.
+    Returns (r, None) on success, or (None, reason) explaining why the
+    candidate was excluded — used to surface plausibility diagnostics.
     """
-    if t < 2 or v0 <= 0 or vt <= 0 or vt >= v0:
-        return None
+    if t < 2:
+        return None, "too recent (t<2 years)"
+    if v0 <= 0 or vt <= 0:
+        return None, "invalid price"
+    if vt >= v0:
+        return None, "price not lower than base year (data anomaly)"
     r = 1 - (vt / v0) ** (1 / t)
-    return r if 0.01 <= r <= 0.50 else None
+    if not (0.01 <= r <= 0.50):
+        return None, f"r={r:.3f} outside plausible range (1%-50%/yr)"
+    return r, None
 
 
-def _exponential_estimate(session, make: str, model: str, base_year: int) -> dict | None:
-    """Estimate depreciation via V(t) = V0*(1-r)^t.
+def gather_price_points(session, make: str, model: str, base_year: int):
+    """Diagnostic view of the data behind the exponential depreciation estimate.
 
-    V0 is the median price of our own scraped listings at base_year (the price
-    the user would actually pay). V(t) candidates come from cross-sectional
-    market prices (iSeeCars) merged with our own listings at other years.
+    Returns (v0, v0_sample_size, points), where points is a list of dicts
+    (sorted by year descending) describing every candidate year considered
+    when solving for r — including ones rejected, with a reason why.
     """
-    v0 = _median_price(session, make, model, base_year)
-    if v0 is None:
-        return None
+    v0_rows = session.execute(
+        select(Listing.price)
+        .where(Listing.make == make, Listing.model == model, Listing.year == base_year)
+        .where(Listing.price.isnot(None))
+    ).scalars().all()
+    v0 = statistics.median(v0_rows) if v0_rows else None
+    v0_sample_size = len(v0_rows)
 
     prices: dict[int, float] = {}
+    sources: dict[int, str] = {}
+    sample_sizes: dict[int, int | None] = {}
 
     listing_rows = session.execute(
         select(Listing.year, Listing.price)
@@ -85,6 +97,8 @@ def _exponential_estimate(session, make: str, model: str, base_year: int) -> dic
         by_year.setdefault(year, []).append(price)
     for year, values in by_year.items():
         prices[year] = statistics.median(values)
+        sources[year] = "our_listings"
+        sample_sizes[year] = len(values)
 
     snapshot_rows = session.execute(
         select(MarketPriceSnapshot.year, MarketPriceSnapshot.median_price)
@@ -92,15 +106,45 @@ def _exponential_estimate(session, make: str, model: str, base_year: int) -> dic
         .where(MarketPriceSnapshot.year != base_year)
     ).all()
     for year, price in snapshot_rows:
-        prices[int(year)] = float(price)  # iSeeCars takes precedence per year
+        year = int(year)
+        prices[year] = float(price)  # iSeeCars takes precedence per year
+        sources[year] = "iseecars"
+        sample_sizes[year] = None
 
-    r_values = []
-    for year, price in prices.items():
+    points = []
+    for year in sorted(prices, reverse=True):
+        price = prices[year]
         t = base_year - year
-        r = _estimate_r(v0, price, t)
-        if r is not None:
-            r_values.append(r)
+        if v0 is None:
+            r, reason = None, "no v0 (no listings at base year)"
+        else:
+            r, reason = _r_with_reason(v0, price, t)
+        points.append({
+            "year": year,
+            "price": round(price, 2),
+            "source": sources[year],
+            "sample_size": sample_sizes[year],
+            "t": t,
+            "r": round(r, 4) if r is not None else None,
+            "used": r is not None,
+            "reason": reason,
+        })
 
+    return v0, v0_sample_size, points
+
+
+def _exponential_estimate(session, make: str, model: str, base_year: int) -> dict | None:
+    """Estimate depreciation via V(t) = V0*(1-r)^t.
+
+    V0 is the median price of our own scraped listings at base_year (the price
+    the user would actually pay). V(t) candidates come from cross-sectional
+    market prices (iSeeCars) merged with our own listings at other years.
+    """
+    v0, _, points = gather_price_points(session, make, model, base_year)
+    if v0 is None:
+        return None
+
+    r_values = [p["r"] for p in points if p["used"]]
     if not r_values:
         return None
 
