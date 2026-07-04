@@ -34,8 +34,11 @@ app.get('/listings', async (req, res) => {
           .filter(([, v]) => v)
       )
     );
-    const listings = await api(`/api/listings?${params}`);
-    res.render('listings', { listings, query: req.query });
+    const [listings, options] = await Promise.all([
+      api(`/api/listings?${params}`),
+      api('/api/listings/options'),
+    ]);
+    res.render('listings', { listings, query: req.query, options });
   } catch (e) {
     res.render('error', { message: e.message });
   }
