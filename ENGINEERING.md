@@ -90,6 +90,18 @@
 
 ---
 
+### Depreciation Bug Fixes + Exponential Decay Model
+- Fixed `backend/processor/fuel_economy.py`: EPA returns `phevComb: "0"` (string) for non-PHEVs — string `"0"` is truthy in Python so `comb08` was never read; fixed by comparing numerically
+- Fixed `backend/processor/depreciation.py`: `base_year` was taken from config `year_max` (often a future year with no listings); now uses the most recent year with actual listings in the DB
+- `db/migrations/004_depreciation_exponential.sql` — NEW: added `rate_r` column to `depreciation_estimates`; new `market_price_snapshots` table for cross-sectional external market prices
+- `backend/models.py` — added `MarketPriceSnapshot` model, `rate_r` field on `DepreciationEstimate`
+- `backend/processor/iseecars.py` — NEW: scrapes iSeeCars.com year-by-year average price data (embedded JS `dataRows` array in each model's listing page) via plain `requests`; upserts into `market_price_snapshots`
+- `backend/processor/depreciation.py` — added exponential decay estimator: `V(t) = V0*(1-r)^t`, where V0 is the median price of our own scraped listings at `base_year` and V(t) candidates come from cross-sectional iSeeCars data (or our own listings) at other years; solves for `r` per candidate pair and takes the median across pairs, clamped to [0.01, 0.50]
+- `backend/api/main.py` — `/api/cost_of_ownership` now prefers `rate_r * current_median_price / 12` for the monthly depreciation figure, falling back to the old linear 5yr/10yr rate; `/api/depreciation` includes `rate_r` in the response
+- `frontend/dashboard/views/depreciation.ejs` / `cost_of_ownership.ejs` — added rate display columns and updated methodology footnote
+
+---
+
 ## Current Status
 
 **MVP complete. All features shipped and smoke-tested.**

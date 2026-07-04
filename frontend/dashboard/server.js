@@ -44,6 +44,10 @@ app.get('/listings', async (req, res) => {
 app.get('/depreciation', async (req, res) => {
   try {
     const data = await api('/api/depreciation');
+    await Promise.all(data.map(async (row) => {
+      const params = new URLSearchParams({ make: row.make, model: row.model, base_year: row.base_year });
+      row.detail = await api(`/api/depreciation/detail?${params}`);
+    }));
     res.render('depreciation', { data });
   } catch (e) {
     res.render('error', { message: e.message });

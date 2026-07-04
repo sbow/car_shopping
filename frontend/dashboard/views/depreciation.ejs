@@ -21,20 +21,72 @@
     <% } else { %>
       <table>
         <thead>
-          <tr><th>Make</th><th>Model</th><th>Base Year</th><th>Rate (5yr) $/yr</th><th>Rate (10yr) $/yr</th></tr>
+          <tr>
+            <th>Make</th><th>Model</th><th>Base Year</th><th>Rate r (%/yr)</th>
+            <th>Sample</th><th>r Range</th>
+            <th>Rate (5yr) $/yr</th><th>Rate (10yr) $/yr</th>
+          </tr>
         </thead>
         <tbody>
-          <% data.forEach(d => { %>
+          <% data.forEach(d => {
+            const points = (d.detail && d.detail.points) || [];
+            const used = points.filter(p => p.used);
+            const rMin = used.length ? Math.min(...used.map(p => p.r)) : null;
+            const rMax = used.length ? Math.max(...used.map(p => p.r)) : null;
+            const v0 = d.detail && d.detail.v0;
+            const v0n = d.detail && d.detail.v0_sample_size;
+          %>
             <tr>
               <td><%= d.make %></td>
               <td><%= d.model %></td>
               <td><%= d.base_year %></td>
+              <td><%= d.rate_r != null ? (d.rate_r * 100).toFixed(1) + '%' : '—' %></td>
+              <td><%= used.length %> pt<%= used.length === 1 ? '' : 's' %></td>
+              <td><%= rMin != null ? (rMin*100).toFixed(1) + '–' + (rMax*100).toFixed(1) + '%' : '—' %></td>
               <td><%= d.rate_5yr ? '$' + Math.round(d.rate_5yr).toLocaleString() : '—' %></td>
               <td><%= d.rate_10yr ? '$' + Math.round(d.rate_10yr).toLocaleString() : '—' %></td>
+            </tr>
+            <tr>
+              <td colspan="8" style="padding: 0 0 1rem 1rem;">
+                <details>
+                  <summary class="muted">
+                    Show data points
+                    (V₀ = <%= v0 != null ? '$' + Math.round(v0).toLocaleString() : '—' %>
+                    from <%= v0n || 0 %> of our own listings at <%= d.base_year %>)
+                  </summary>
+                  <% if (points.length === 0) { %>
+                    <p class="muted">No cross-sectional data points available.</p>
+                  <% } else { %>
+                    <table style="margin-top: 0.5rem;">
+                      <thead>
+                        <tr><th>Year</th><th>Price</th><th>Source</th><th>Listings</th><th>t (yrs)</th><th>Implied r</th><th>Used?</th></tr>
+                      </thead>
+                      <tbody>
+                        <% points.forEach(p => { %>
+                          <tr style="<%= p.used ? '' : 'opacity: 0.5;' %>">
+                            <td><%= p.year %></td>
+                            <td>$<%= Math.round(p.price).toLocaleString() %></td>
+                            <td><%= p.source === 'iseecars' ? 'iSeeCars' : 'Our listings' %></td>
+                            <td><%= p.sample_size != null ? p.sample_size : '—' %></td>
+                            <td><%= p.t %></td>
+                            <td><%= p.r != null ? (p.r * 100).toFixed(1) + '%' : '—' %></td>
+                            <td><%= p.used ? 'Yes' : ('No — ' + p.reason) %></td>
+                          </tr>
+                        <% }); %>
+                      </tbody>
+                    </table>
+                  <% } %>
+                </details>
+              </td>
             </tr>
           <% }); %>
         </tbody>
       </table>
+      <p class="muted" style="margin-top:1rem; font-size:0.85em;">
+        Rate r is the median annual decay rate from V(t) = V₀·(1−r)^t fitted across
+        cross-sectional price points (iSeeCars + our own listings at other model years).
+        More points and a tighter r range indicate a more plausible estimate.
+      </p>
     <% } %>
   </main>
 </body>

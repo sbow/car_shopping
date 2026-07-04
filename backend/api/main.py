@@ -1,12 +1,15 @@
 """FastAPI application — serves listing data to the Node.js dashboard."""
 
+import statistics
+
 from fastapi import FastAPI, Query
-from sqlalchemy import select, asc, desc, nulls_last, or_
+from sqlalchemy import select, asc, desc, nulls_last, or_, func
 from backend.models import Listing, DepreciationEstimate
 import backend.db as db
 import backend.config as config
 from backend.processor.alternatives import get_alternatives
 from backend.processor.fuel_economy import get_mpg
+from backend.processor.depreciation import gather_price_points
 
 app = FastAPI(title="Car Shopping API")
 
@@ -79,9 +82,38 @@ def depreciation(make: str | None = None, model: str | None = None):
         return [
             {"make": r.make, "model": r.model, "base_year": r.base_year,
              "rate_5yr": float(r.rate_5yr) if r.rate_5yr else None,
-             "rate_10yr": float(r.rate_10yr) if r.rate_10yr else None}
+             "rate_10yr": float(r.rate_10yr) if r.rate_10yr else None,
+             "rate_r": float(r.rate_r) if r.rate_r else None}
             for r in rows
         ]
+    finally:
+        session.close()
+
+
+@app.get("/api/depreciation/detail")
+def depreciation_detail(make: str, model: str, base_year: int | None = None):
+    """Diagnostic breakdown of the data points behind an exponential
+    depreciation estimate — surfaces sample sizes and per-point r values so
+    the dashboard can show how plausible a given rate is."""
+    session = db.get_session()
+    try:
+        if base_year is None:
+            base_year = session.execute(
+                select(func.max(Listing.year))
+                .where(Listing.make == make, Listing.model == model)
+                .where(Listing.price.isnot(None))
+            ).scalar()
+        if not base_year:
+            return {"make": make, "model": model, "base_year": None,
+                    "v0": None, "v0_sample_size": 0, "points": []}
+
+        v0, v0_n, points = gather_price_points(session, make, model, base_year)
+        return {
+            "make": make, "model": model, "base_year": base_year,
+            "v0": round(v0, 2) if v0 is not None else None,
+            "v0_sample_size": v0_n,
+            "points": points,
+        }
     finally:
         session.close()
 
@@ -130,6 +162,7 @@ def cost_of_ownership():
                 select(DepreciationEstimate)
                 .where(DepreciationEstimate.make == make, DepreciationEstimate.model == model)
                 .where(or_(
+                    DepreciationEstimate.rate_r.is_not(None),
                     DepreciationEstimate.rate_5yr.is_not(None),
                     DepreciationEstimate.rate_10yr.is_not(None),
                 ))
@@ -137,8 +170,20 @@ def cost_of_ownership():
                 .limit(1)
             ).scalar_one_or_none()
 
-            rate = float(est.rate_5yr or est.rate_10yr) if est else None
-            depr_per_month = round(rate / 12, 2) if rate else None
+            rate_r = float(est.rate_r) if est and est.rate_r else None
+            depr_per_month = None
+            if rate_r:
+                prices = session.execute(
+                    select(Listing.price)
+                    .where(Listing.make == make, Listing.model == model)
+                    .where(Listing.price.isnot(None))
+                ).scalars().all()
+                v0 = statistics.median(prices) if prices else None
+                if v0:
+                    depr_per_month = round(v0 * rate_r / 12, 2)
+            if depr_per_month is None and est and (est.rate_5yr or est.rate_10yr):
+                rate = float(est.rate_5yr or est.rate_10yr)
+                depr_per_month = round(rate / 12, 2)
 
             mpg = get_mpg(make, model, v.get("year_min", 2018))
             fuel_per_month = round(monthly_miles / mpg * gas_price, 2) if mpg else None
@@ -154,6 +199,7 @@ def cost_of_ownership():
                 "mpg_used": mpg,
                 "monthly_miles": monthly_miles,
                 "gas_price": gas_price,
+                "depreciation_rate_pct": round(rate_r * 100, 1) if rate_r else None,
             })
         return rows
     finally:

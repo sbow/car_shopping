@@ -75,9 +75,10 @@ def get_mpg(make: str, model: str, year: int) -> float | None:
             vr = requests.get(f"{_BASE_URL}/vehicle/{vid}", headers=_HEADERS, timeout=10)
             vr.raise_for_status()
             v = vr.json()
-            # PHEVs return phevComb (blended); gas/hybrids return comb08
-            raw = v.get("phevComb") or v.get("comb08")
-            val = float(raw) if raw else None
+            # EPA returns "0" (string) for phevComb on non-PHEVs — must compare numerically
+            phev = float(v.get("phevComb") or 0)
+            comb = float(v.get("comb08") or 0)
+            val = phev if phev > 0 else (comb if comb > 0 else None)
             if val:
                 mpg_values.append(val)
         except Exception:
