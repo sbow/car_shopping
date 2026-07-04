@@ -45,7 +45,21 @@ class DepreciationEstimate(Base):
     base_year: Mapped[int] = mapped_column(Integer, nullable=False)
     rate_5yr: Mapped[float | None] = mapped_column(Numeric(10, 2))
     rate_10yr: Mapped[float | None] = mapped_column(Numeric(10, 2))
+    rate_r: Mapped[float | None] = mapped_column(Numeric(6, 4))
     computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class MarketPriceSnapshot(Base):
+    __tablename__ = "market_price_snapshots"
+    __table_args__ = (UniqueConstraint("make", "model", "year", "source"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    make: Mapped[str] = mapped_column(String, nullable=False)
+    model: Mapped[str] = mapped_column(String, nullable=False)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    median_price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    source: Mapped[str] = mapped_column(String, nullable=False)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
 
 class AlertSent(Base):

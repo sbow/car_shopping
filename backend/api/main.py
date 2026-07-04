@@ -1,5 +1,7 @@
 """FastAPI application — serves listing data to the Node.js dashboard."""
 
+import statistics
+
 from fastapi import FastAPI, Query
 from sqlalchemy import select, asc, desc, nulls_last, or_
 from backend.models import Listing, DepreciationEstimate
@@ -79,7 +81,8 @@ def depreciation(make: str | None = None, model: str | None = None):
         return [
             {"make": r.make, "model": r.model, "base_year": r.base_year,
              "rate_5yr": float(r.rate_5yr) if r.rate_5yr else None,
-             "rate_10yr": float(r.rate_10yr) if r.rate_10yr else None}
+             "rate_10yr": float(r.rate_10yr) if r.rate_10yr else None,
+             "rate_r": float(r.rate_r) if r.rate_r else None}
             for r in rows
         ]
     finally:
@@ -130,6 +133,7 @@ def cost_of_ownership():
                 select(DepreciationEstimate)
                 .where(DepreciationEstimate.make == make, DepreciationEstimate.model == model)
                 .where(or_(
+                    DepreciationEstimate.rate_r.is_not(None),
                     DepreciationEstimate.rate_5yr.is_not(None),
                     DepreciationEstimate.rate_10yr.is_not(None),
                 ))
@@ -137,8 +141,20 @@ def cost_of_ownership():
                 .limit(1)
             ).scalar_one_or_none()
 
-            rate = float(est.rate_5yr or est.rate_10yr) if est else None
-            depr_per_month = round(rate / 12, 2) if rate else None
+            rate_r = float(est.rate_r) if est and est.rate_r else None
+            depr_per_month = None
+            if rate_r:
+                prices = session.execute(
+                    select(Listing.price)
+                    .where(Listing.make == make, Listing.model == model)
+                    .where(Listing.price.isnot(None))
+                ).scalars().all()
+                v0 = statistics.median(prices) if prices else None
+                if v0:
+                    depr_per_month = round(v0 * rate_r / 12, 2)
+            if depr_per_month is None and est and (est.rate_5yr or est.rate_10yr):
+                rate = float(est.rate_5yr or est.rate_10yr)
+                depr_per_month = round(rate / 12, 2)
 
             mpg = get_mpg(make, model, v.get("year_min", 2018))
             fuel_per_month = round(monthly_miles / mpg * gas_price, 2) if mpg else None
@@ -154,6 +170,7 @@ def cost_of_ownership():
                 "mpg_used": mpg,
                 "monthly_miles": monthly_miles,
                 "gas_price": gas_price,
+                "depreciation_rate_pct": round(rate_r * 100, 1) if rate_r else None,
             })
         return rows
     finally:

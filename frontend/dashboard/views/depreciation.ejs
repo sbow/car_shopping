@@ -21,7 +21,7 @@
     <% } else { %>
       <table>
         <thead>
-          <tr><th>Make</th><th>Model</th><th>Base Year</th><th>Rate (5yr) $/yr</th><th>Rate (10yr) $/yr</th></tr>
+          <tr><th>Make</th><th>Model</th><th>Base Year</th><th>Rate r (%/yr)</th><th>Rate (5yr) $/yr</th><th>Rate (10yr) $/yr</th></tr>
         </thead>
         <tbody>
           <% data.forEach(d => { %>
@@ -29,6 +29,7 @@
               <td><%= d.make %></td>
               <td><%= d.model %></td>
               <td><%= d.base_year %></td>
+              <td><%= d.rate_r != null ? (d.rate_r * 100).toFixed(1) + '%' : '—' %></td>
               <td><%= d.rate_5yr ? '$' + Math.round(d.rate_5yr).toLocaleString() : '—' %></td>
               <td><%= d.rate_10yr ? '$' + Math.round(d.rate_10yr).toLocaleString() : '—' %></td>
             </tr>

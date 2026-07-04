@@ -24,6 +24,7 @@
           <tr>
             <th>Make</th>
             <th>Model</th>
+            <th>Depr. Rate</th>
             <th>Depreciation $/mo</th>
             <th>Fuel $/mo</th>
             <th>Total $/mo</th>
@@ -37,6 +38,7 @@
             <tr>
               <td><%= d.make %></td>
               <td><%= d.model %></td>
+              <td><%= d.depreciation_rate_pct != null ? d.depreciation_rate_pct + '%/yr' : '—' %></td>
               <td><%= d.depreciation_per_month != null ? '$' + Math.round(d.depreciation_per_month).toLocaleString() : '—' %></td>
               <td><%= d.fuel_per_month != null ? '$' + Math.round(d.fuel_per_month).toLocaleString() : '—' %></td>
               <td><strong><%= d.total_per_month != null ? '$' + Math.round(d.total_per_month).toLocaleString() : '—' %></strong></td>
@@ -48,7 +50,8 @@
         </tbody>
       </table>
       <p class="muted" style="margin-top:1rem; font-size:0.85em;">
-        Depreciation from median listing prices ($/yr ÷ 12).
+        Depreciation uses V(t) = V₀·(1−r)^t fitted to cross-sectional iSeeCars
+        market prices. Monthly figure = current median listing price × r ÷ 12.
         Fuel uses EPA combined MPG/MPGe; PHEVs use blended efficiency
         (electricity normalized to gas-equivalent gallon).
       </p>

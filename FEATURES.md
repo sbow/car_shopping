@@ -6,7 +6,7 @@
 - [x] PostgreSQL schema (listings, depreciation_estimates, alerts_sent)
 - [x] CarGurus listing scraper (Playwright headless)
 - [x] Listing deduplication by fingerprint (VIN or make+model+year+mileage+price hash)
-- [x] Depreciation estimator — $/yr via 5yr and 10yr median price comparison
+- [x] Depreciation estimator — $/yr via 5yr and 10yr median price comparison, plus exponential decay (V(t)=V0(1-r)^t) rate fitted against cross-sectional iSeeCars market prices
 - [x] Alternative vehicle generator — segment map in config.toml
 - [x] FastAPI backend — /listings, /watchlist, /depreciation, /alternatives
 - [x] Node.js/Express dashboard — watchlist, listings (filtered), depreciation, alternatives views
