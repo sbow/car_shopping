@@ -69,6 +69,23 @@ def listings(
         session.close()
 
 
+@app.get("/api/listings/options")
+def listing_options():
+    """Distinct make/model values present in the listings table, for
+    populating filter dropdowns on the dashboard."""
+    session = db.get_session()
+    try:
+        makes = session.execute(
+            select(Listing.make).distinct().order_by(Listing.make)
+        ).scalars().all()
+        models = session.execute(
+            select(Listing.model).distinct().order_by(Listing.model)
+        ).scalars().all()
+        return {"makes": makes, "models": models}
+    finally:
+        session.close()
+
+
 @app.get("/api/depreciation")
 def depreciation(make: str | None = None, model: str | None = None):
     session = db.get_session()

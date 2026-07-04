@@ -16,8 +16,18 @@
   <main>
     <h1>Listings</h1>
     <form method="get" action="/listings" class="filter-form">
-      <input name="make" placeholder="Make" value="<%= query.make ?? '' %>">
-      <input name="model" placeholder="Model" value="<%= query.model ?? '' %>">
+      <select name="make">
+        <option value="">All Makes</option>
+        <% options.makes.forEach(m => { %>
+          <option value="<%= m %>" <%= query.make === m ? 'selected' : '' %>><%= m %></option>
+        <% }); %>
+      </select>
+      <select name="model">
+        <option value="">All Models</option>
+        <% options.models.forEach(m => { %>
+          <option value="<%= m %>" <%= query.model === m ? 'selected' : '' %>><%= m %></option>
+        <% }); %>
+      </select>
       <input name="year_min" placeholder="Year min" type="number" value="<%= query.year_min ?? '' %>">
       <input name="year_max" placeholder="Year max" type="number" value="<%= query.year_max ?? '' %>">
       <input name="max_price" placeholder="Max price" type="number" value="<%= query.max_price ?? '' %>">
